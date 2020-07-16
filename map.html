@@ -1,0 +1,223 @@
+
+{include file="common/header"}
+<div class="wrap wrap-top wrap-down">   
+    <div class="fabu-box">
+        <form id="admin" method="post">
+        <ul class="fabu-list">
+            <li>
+                <div class="fb-label">是否开启位置：</div>
+                <div class=" po-r fix">
+                    <ul class="ui-choose fix" id="uc_01">
+                        <li class="selected">是</li>
+                        <li>否</li>
+                    </ul>
+                    <div class="map-huan" style="display:block;">
+                        <div class="fb-label">详细地址：</div>
+                        <div class="bMap">
+                            <input type="text" name="lng" id="lng" value="{notempty name='$article.lng'}{$article.lng}{/notempty}" style="display:;" />
+                            <input type="text" name="lat" id="lat" value="{notempty name='$article.lat'}{$article.lat}{/notempty}" style="display:;" />
+                            <input type="text" name="address" disabled="" style="text-align: center;" id='sever_add' size="20" value="{notempty name='$article.address'}{$article.address}{else /}点击地图获取位置信息{/notempty}" />
+                            <input type="text" name="address" id='address' value="{notempty name='$article.address'}{$article.address}{/notempty}" />
+                            <div id='allmap'></div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </li>
+        </ul>
+        </form>
+    </div>
+</div>
+<script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=Z1DUOAgbU11cbaGyexgb4mVaU149Xwc6"></script>
+<script type="text/javascript">//判断是否是空
+
+  function isNull(a) {
+    return (a == '' || typeof(a) == 'undefined' || a == null) ? true: false;
+  }
+
+  var map = new BMap.Map("allmap");
+  var geoc = new BMap.Geocoder(); //地址解析对象
+  
+  var lng = $("#lng").val();
+  console.log(lng);
+  if (lng == "") { lng = 116.739769}
+  var lat = $("#lat").val();
+console.log(lat);
+  if (lat == '') {lat = 39.909483}
+  var point = new BMap.Point(lng,lat);
+  var geolocation = new BMap.Geolocation();
+  map.centerAndZoom(point, 18); // 中心点
+  geolocation.getCurrentPosition(function(r) {
+    // console.log(r);
+    if (this.getStatus() == BMAP_STATUS_SUCCESS) {
+      var mk = new BMap.Marker(r.point);
+      mk.addEventListener("dragend", showInfo);
+      mk.enableDragging();    //可拖拽  
+      map.addOverlay(mk);
+      map.panTo(r.point);
+      
+    } else {
+    }
+  }); 
+map.enableScrollWheelZoom(true);
+
+
+  // 添加带有定位的导航控件
+  var navigationControl = new BMap.NavigationControl({
+    // 靠左上角位置
+    anchor: BMAP_ANCHOR_TOP_LEFT,
+    // LARGE类型
+    type: BMAP_NAVIGATION_CONTROL_LARGE,
+    // 启用显示定位
+    enableGeolocation: true
+  });
+  map.addControl(navigationControl);//获取当前位置控件
+
+  // 添加定位控件
+  var geolocationControl = new BMap.GeolocationControl();
+  geolocationControl.addEventListener("locationSuccess",
+  function(e) {
+    // 定位成功事件
+    var address = '';
+    address += e.addressComponent.province;
+    address += e.addressComponent.city;
+    address += e.addressComponent.district;
+    address += e.addressComponent.street;
+    address += e.addressComponent.streetNumber;
+    document.getElementById('sever_add').value = address;
+    document.getElementById('address').value = address;
+  });
+  geolocationControl.addEventListener("locationError",
+  function(e) {
+    // 定位失败事件
+    $("#light").children("p").html(e.message);
+    $("#light").css("display","block");
+    setTimeout(function()
+    {
+        $("#light").css('display',"none");
+    },2000);
+  });
+  map.addControl(geolocationControl);//添加控件
+
+
+  
+  //绑定Marker的拖拽事件
+  function showInfo(e) {
+    document.getElementById('lng').value = e.point.lng;
+    document.getElementById('lat').value = e.point.lat;
+    var geoc = new BMap.Geocoder();
+    geoc.getLocation(e.point, function(rs) {
+      var addComp = rs.addressComponents;
+      var address = addComp.province + addComp.city + addComp.district + addComp.street + addComp.streetNumber;
+      document.getElementById('sever_add').value = address;
+      document.getElementById('address').value = address;
+      
+      $("#light").children("p").html("当前定位地址为：" + address + "!");
+        $("#light").css("display","block");
+        setTimeout(function()
+        {
+            $("#light").css('display',"none");
+        },2000);
+    });
+  }
+  
+  </script>
+
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta HTTP-EQUIV="pragma" CONTENT="no-cache"> 
+    <title>my-project</title>
+  </head>
+  <body>
+    <p id="demo">点击这个按钮，获得您的坐标：</p>
+    *******************************************************
+    <p id="demo1"></p>
+    <p><button onclick="getLocation()">试一下1</button></p>
+    *******************************************************
+    <p><button onclick="locationByIp()">ip定位</button></p>
+
+    <script src="https://pv.sohu.com/cityjson?ie=utf-8"></script>
+    <script src="https://cdn.bootcss.com/jquery/3.1.1/jquery.min.js"></script>
+    <script>
+        
+        var x=document.getElementById("demo");
+        var x1=document.getElementById("demo1");
+        function getLocation(){
+            if (navigator.geolocation){
+                x1.innerHTML=JSON.stringify(navigator)
+                navigator.geolocation.getCurrentPosition(showPosition,showError,{
+                        enableHighAcuracy : true,// 指示浏览器获取高精度的位置，默认为false  
+                        timeout : 5000,// 指定获取地理位置的超时时间，默认不限时，单位为毫秒  
+                        maximumAge : 2000 // 最长有效期，在重复获取地理位置时，此参数指定多久再次获取位置。  
+                    });
+            }else{
+                locationByIp();
+                x.innerHTML="Geolocation is not supported by this browser.";
+               console.log("Geolocation is not supported by this browser.");
+            }
+        }
+        function showPosition(position){
+            console.log(position);
+            document.getElementById('lng').value = position.coords.longitude;
+            document.getElementById('lat').value = position.coords.latitude;
+            // x.innerHTML="Latitude: " + position.coords.latitude + "<br />Longitude: " + position.coords.longitude;
+            // console.log("Latitude: " + position.coords.latitude + "<br />Longitude: " + position.coords.longitude);
+            var geoc = new BMap.Geocoder();
+            geoc.getLocation(position.point, function(rs) {
+                console.log(rs);
+                var addComp = rs.addressComponents;
+                var address = addComp.province + addComp.city + addComp.district + addComp.street + addComp.streetNumber;
+                document.getElementById('sever_add').value = address;
+                document.getElementById('address').value = address;
+                alert("当前定位地址为：" + address);
+            });
+        }
+// 上面的代码可以知道，如果用户设备支持地理定位，则运行 getCurrentPosition() 方法。如果getCurrentPosition()运行成功，则向参数showPosition中规定的函数返回一个coordinates对象，getCurrentPosition() 方法的第二个参数showError用于处理错误，它规定当获取用户位置失败时运行的函数。
+// 我们先来看函数showError()，它规定获取用户地理位置失败时的一些错误代码处理方式：
+    showError=(error)=>{
+        locationByIp();
+        switch(error.code) {
+            case error.PERMISSION_DENIED:
+            alert("定位失败,用户拒绝请求地理定位");
+            break;
+            case error.POSITION_UNAVAILABLE:
+            alert("定位失败,位置信息是不可用");
+            break;
+            case error.TIMEOUT:
+            alert("定位失败,请求获取用户位置超时");
+            break;
+            case error.UNKNOWN_ERROR:
+            alert("定位失败,定位系统失效");
+            break;
+        }
+    };
+    
+    function locationByIp() {
+        var localtion={};
+        localtion.ip = returnCitySN.cip;
+        // 通过百度api获得经纬度
+        $.getJSON("https://api.map.baidu.com/location/ip?callback=?", {
+            'ak' : 'Z1DUOAgbU11cbaGyexgb4mVaU149Xwc6',
+            // 'ak' : 'EZPCgQ6zGu6hZSmXlRrUMTpr',
+            'coor' : 'bd09ll',
+            'ip' : localtion.ip
+        }, function(data) {
+            localtion.province = data.content.address_detail.province;
+            localtion.city = data.content.address_detail.city;
+            localtion.district = data.content.address_detail.district;
+            x1.innerHTML=JSON.stringify(data.content);
+        });
+
+        // $.get(`http://ip.taobao.com/service/getIpInfo.php?ip=${localtion.ip}`,function(data){
+        //     showLocation(JSON.parse(data))
+        // })
+    }
+
+    function showLocation(){
+        $.get(`http://gc.ditu.aliyun.com/geocoding?a=${returnCitySN.cname}`,function(res){
+        })
+    }
+     </script>
